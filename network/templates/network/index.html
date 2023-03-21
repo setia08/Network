@@ -1,0 +1,137 @@
+{% extends "network/layout.html" %}
+
+{% block body %}
+<script>
+
+  function getCookie(name){
+    const value= `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if(parts.length ==2) return parts.pop().split(';').shift();
+  }
+
+  function submitHandler(id_1){
+
+    console.log(id_1)
+    const textArea__=document.getElementById(`textarea_${id_1}`).value;
+    console.log(textArea__)
+    const content=document.getElementById(`content_${id_1}`);
+    console.log(content)
+    const modal =document.getElementById(`exampleModalCenter${id_1}`);
+    console.log("edit button is clicked")
+    fetch(`/edit/${id_1}`,{
+      method: 'POST', // or 'PUT'
+  headers: {
+    'Content-Type': 'application/json',
+    "X-CSRFToken":getCookie("csrftoken")
+  },
+  body: JSON.stringify({
+    content :textArea__
+    }), 
+})
+.then(response =>response.json())
+.then(result => {
+// console.log(result);
+content.innerHTML=result.data;
+
+modal.classList.remove('show');
+modal.setAttribute('aria-hidden','true');
+modal.setAttribute('style','display:none');
+
+const modalsBackdrops= document.getElementsByClassName('modal-backdrop')
+
+for(let i=0;i<modalsBackdrops.length;i++){
+  document.body.removeChild(modalsBackdrops[i]);
+}
+
+
+});
+  }
+ function likeHandler(id,whoyouliked){
+    const btn=document.getElementById(`${id}`)
+    btn.classList.remove('fa-thumbs-down')
+    btn.classList.remove('fa-thumbs-up')
+    console.log(whoyouliked)
+    if(whoyouliked.indexOf(id) >=0 ){
+      var liked=true;
+    }else{  
+      var liked=false;
+    }
+    console.log(liked)
+    if(liked === true){
+      fetch(`/removelike/${id}`)
+        .then(response=>response.json)
+        .then(result=>{
+          btn.classList.add('fa-thumbs-up')
+        })
+    }else{
+      fetch(`/addlike/${id}`)
+        .then(response=>response.json)
+        .then(result=>{
+          btn.classList.add('fa-thumbs-down')
+        })
+      }
+      liked = !liked
+      console.log(liked)
+ }
+</script><center>
+ <br>
+    <div>
+    {% for i in page_obj %}
+    <hr>
+    Username: <a  href="{% url 'profile_for_loop' user_id=i.id %}"> {{i.author}} </a><br>
+    <h6 id="content_{{i.id}}">Content: {{i.content}} <br></h6>
+    Date: {{i.date}}  <br>
+    Time: {{i.time}}  <br>
+    <br>
+    {% if user.is_authenticated %}
+   <!-- {{whoyouliked}}-->
+    {% if i.id in whoyouliked %}
+        <button id="{{i.id}}" class="btn btn-info fa fa-thumbs-down" onclick="likeHandler({{i.id}},{{whoyouliked}})"></button>
+    {% else %}
+        <button id="{{i.id}}" class="btn btn-info fa fa-thumbs-up" onclick="likeHandler({{i.id}},{{whoyouliked}})" ></button>
+    {% endif %} 
+    <br>
+    {% if request.user == i.author %}
+    <!-- Button trigger modal -->
+<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModalCenter{{i.id}}">
+  Edit
+</button>
+
+<!-- Modal -->
+<div class="modal fade" id="exampleModalCenter{{i.id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLongTitle">Modal title</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <textarea rows="10" id="textarea_{{i.id}}" class="form-control" >{{i.content}} </textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" id="text_{{i.id}}"  class="btn btn-primary" onclick="submitHandler({{i.id}})" >Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+    <br>
+    <br>
+    {% endif %}
+    {% endfor %}
+    </div>
+    <nav aria-label="Page navigation example" style="margin-left: 580px;">
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{page_obj.previous_page_number}}">Previous</a></li>
+            {% endif %}
+            {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{page_obj.next_page_number}}">Next</a></li>
+            {% endif %}
+        </ul>
+      </nav>
+    </center>
+{% endblock %}

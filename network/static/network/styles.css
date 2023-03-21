@@ -1,0 +1,7 @@
+.border_div{
+    width: auto;
+    height: auto;
+    display: flex;
+  align-items: right;
+  margin-left: 100px;
+}
